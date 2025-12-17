@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: hello
+      POSTGRES_DB: mydb
+    volumes:
+      - /var/lib/postgresql/data
+  adminer:
+    image: adminer:latest
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports:
+      - '8080:8080'
+  app:
+    depends_on:
+      - db
+    build:
+      context: .
+      target: dev
+    restart: always
+    develop:
+      watch:
+        - path: ./drizzle.config.ts
+          target: /app/drizzle.config.ts
+          action: sync
+        - path: ./package.json
+          action: rebuild
+        - path: ./app
+          target: /app/app
+          action: sync
+        - path: ./db
+          target: /app/db
+          action: sync+restart
+        - path: ./components
+          target: /app/components
+          action: sync
+        - path: ./lib
+          target: /app/lib
+          action: sync
+        - path: ./public
+          target: /app/public
+          action: sync
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://root:hello@db:5432/mydb
+    volumes:
+      - /app/node_modules
