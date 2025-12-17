@@ -4,44 +4,48 @@ import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-// Fonction pour parser le markdown (titres uniquement pour le sommaire)
+// Petit utilitaire pour transformer le markdown en HTML simple
 function parseContent(content: string) {
   const lines = content.split('\n');
   const toc: { id: string; text: string; level: number }[] = [];
   
   const html = lines.map((line, index) => {
-    // Gestion simple des titres
+    // Titres H1 (#)
     if (line.startsWith('# ')) {
       const text = line.replace('# ', '').trim();
       const id = `section-${index}`;
       toc.push({ id, text, level: 1 });
       return `<h1 id="${id}" class="text-3xl font-bold mt-8 mb-4">${text}</h1>`;
     }
+    // Titres H2 (##)
     if (line.startsWith('## ')) {
       const text = line.replace('## ', '').trim();
       const id = `section-${index}`;
       toc.push({ id, text, level: 2 });
       return `<h2 id="${id}" class="text-2xl font-semibold mt-6 mb-3">${text}</h2>`;
     }
-    // Paragraphes simples
+    // Paragraphes vides
     if (line.trim() === '') return '<br/>';
+    // Paragraphes normaux
     return `<p class="mb-4 leading-relaxed">${line}</p>`;
   }).join('');
 
   return { html, toc };
 }
 
-// NOTEZ BIEN : params est une Promise ici
+// NOTE : Le type de props a changé en Next.js 15
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
-  // 1. On attend que les paramètres soient résolus (Spécifique Next.js 15)
+  // ⚠️ ÉTAPE CRUCIALE : Il faut attendre la résolution des paramètres
   const resolvedParams = await params;
-  const { slug } = resolvedParams;
+  const slug = resolvedParams.slug;
 
-  // 2. On cherche l'article
+  console.log("Recherche de l'article avec le slug :", slug); // Pour le débogage
+
+  // Récupération de l'article
   const result = await db.select().from(articles).where(eq(articles.slug, slug));
   const article = result[0];
 
-  // 3. Si pas d'article, on renvoie une 404
+  // Si l'article n'existe pas, on déclenche la 404
   if (!article) {
     notFound();
   }
@@ -50,36 +54,46 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-white dark:bg-black text-black dark:text-zinc-50">
-      {/* Sidebar: Sommaire */}
-      <aside className="w-full md:w-64 bg-gray-50 dark:bg-zinc-900 p-6 border-r border-gray-200 dark:border-zinc-800 md:h-screen md:sticky md:top-0 overflow-y-auto">
-        <Link href="/" className="text-blue-600 hover:underline mb-8 block font-medium">
-          ← Retour
+      {/* Sidebar : Sommaire */}
+      <aside className="w-full md:w-64 bg-zinc-50 dark:bg-zinc-900 p-6 border-r border-zinc-200 dark:border-zinc-800 md:h-screen md:sticky md:top-0 overflow-y-auto">
+        <Link href="/" className="inline-flex items-center text-sm text-zinc-500 hover:text-black dark:hover:text-white mb-8 transition-colors">
+          ← Retour à l'accueil
         </Link>
         
-        <h3 className="font-bold text-lg mb-4 uppercase text-gray-500 text-sm tracking-wider">Sommaire</h3>
-        <nav className="space-y-2">
+        <h3 className="font-bold text-xs uppercase text-zinc-400 mb-4 tracking-wider">
+          Dans cet article
+        </h3>
+        
+        <nav className="space-y-1">
           {toc.length > 0 ? toc.map((item) => (
             <a 
               key={item.id} 
               href={`#${item.id}`}
-              className={`block hover:text-blue-500 text-sm transition-colors ${item.level === 1 ? 'font-medium' : 'pl-4 text-gray-500'}`}
+              className={`block text-sm py-1 transition-colors hover:text-blue-600 dark:hover:text-blue-400
+                ${item.level === 1 ? 'font-medium text-zinc-900 dark:text-zinc-200' : 'pl-4 text-zinc-500 dark:text-zinc-400'}`}
             >
               {item.text}
             </a>
-          )) : <p className="text-sm text-gray-400 italic">Aucun sommaire détecté</p>}
+          )) : (
+            <p className="text-xs text-zinc-400 italic">Aucun sommaire</p>
+          )}
         </nav>
       </aside>
 
       {/* Contenu principal */}
-      <main className="flex-1 p-8 md:p-16 max-w-4xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-black mb-4">{article.title}</h1>
-        <div className="text-gray-500 dark:text-gray-400 mb-8 border-b dark:border-zinc-800 pb-4 text-sm">
-          Dernière modification : {article.updatedAt ? new Date(article.updatedAt).toLocaleDateString() : 'Inconnue'}
-        </div>
+      <main className="flex-1 p-8 md:p-12 max-w-4xl mx-auto w-full">
+        <header className="mb-8 pb-8 border-b border-zinc-100 dark:border-zinc-800">
+          <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight">{article.title}</h1>
+          <div className="flex items-center text-sm text-zinc-500">
+            <span>Mis à jour le {article.updatedAt ? new Date(article.updatedAt).toLocaleDateString() : "Date inconnue"}</span>
+          </div>
+        </header>
         
-        {/* Affichage du contenu HTML généré */}
         <div 
-          className="prose dark:prose-invert max-w-none"
+          className="prose prose-zinc dark:prose-invert max-w-none 
+            prose-headings:font-bold prose-headings:tracking-tight
+            prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
+            prose-img:rounded-xl prose-img:shadow-lg"
           dangerouslySetInnerHTML={{ __html: html }} 
         />
       </main>
