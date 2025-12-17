@@ -25,11 +25,32 @@ export async function createArticle(formData: FormData) {
   redirect(`/wiki/${slug}`);
 }
 
-// Inscription rapide (simulée)
 export async function register(formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
-  await db.insert(users).values({ email, password });
+  // Vérification basique
+  if (!email || !password) {
+    return; // Ou gérer l'erreur
+  }
+
+  // Vérifier si l'utilisateur existe déjà
+  const existingUser = await db.select().from(users).where(eq(users.email, email));
+  if (existingUser.length > 0) {
+    // L'utilisateur existe déjà
+    return; 
+  }
+
+  // Création de l'utilisateur
+  // NOTE: En production, il faut TOUJOURS hacher le mot de passe (ex: avec bcrypt)
+  // Ici on le stocke en clair pour la simplicité de l'exercice.
+  await db.insert(users).values({ 
+    email, 
+    password 
+  });
+
+  console.log("Compte créé pour :", email);
+  
+  // Redirection vers l'accueil après inscription
   redirect('/');
 }

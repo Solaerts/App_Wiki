@@ -12,7 +12,8 @@ export default async function Home() {
         <h1 className="text-4xl font-bold">WikiApp</h1>
         <div className="space-x-4">
           <Link href="/create"><Button>Créer un article</Button></Link>
-          <Link href="/login"><Button variant="secondary">Connexion</Button></Link>
+          {/* Ajoute ce lien vers la page register */}
+          <Link href="/register"><Button variant="secondary">S'inscrire</Button></Link>
         </div>
       </header>
 
