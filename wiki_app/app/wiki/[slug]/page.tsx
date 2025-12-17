@@ -3,6 +3,7 @@ import { articles } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Button } from '@/components/ui/Button';
 
 // Petit utilitaire pour transformer le markdown en HTML simple
 function parseContent(content: string) {
@@ -83,10 +84,18 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       {/* Contenu principal */}
       <main className="flex-1 p-8 md:p-12 max-w-4xl mx-auto w-full">
         <header className="mb-8 pb-8 border-b border-zinc-100 dark:border-zinc-800">
-          <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight">{article.title}</h1>
-          <div className="flex items-center text-sm text-zinc-500">
-            <span>Mis à jour le {article.updatedAt ? new Date(article.updatedAt).toLocaleDateString() : "Date inconnue"}</span>
-          </div>
+            <div className="flex justify-between items-start">
+                <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight">{article.title}</h1>
+                
+                {/* BOUTON MODIFIER ICI */}
+                <Link href={`/wiki/${slug}/edit`}>
+                <Button variant="secondary" className="text-sm">Modifier</Button>
+                </Link>
+            </div>
+            
+            <div className="flex items-center text-sm text-zinc-500">
+                <span>Mis à jour le {article.updatedAt ? new Date(article.updatedAt).toLocaleDateString() : "Date inconnue"}</span>
+            </div>
         </header>
         
         <div 

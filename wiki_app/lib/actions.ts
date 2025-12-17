@@ -54,3 +54,25 @@ export async function register(formData: FormData) {
   // Redirection vers l'accueil après inscription
   redirect('/');
 }
+
+export async function updateArticle(formData: FormData) {
+  const id = Number(formData.get('id'));
+  const title = formData.get('title') as string;
+  const content = formData.get('content') as string;
+  
+  // On régénère le slug au cas où le titre change
+  const slug = title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+
+  await db.update(articles)
+    .set({ 
+      title, 
+      slug, 
+      content, 
+      updatedAt: new Date() // On met à jour la date
+    })
+    .where(eq(articles.id, id));
+
+  revalidatePath('/'); // Rafraîchir l'accueil
+  revalidatePath(`/wiki/${slug}`); // Rafraîchir la page de l'article
+  redirect(`/wiki/${slug}`);
+}
